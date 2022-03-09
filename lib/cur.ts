@@ -6,12 +6,15 @@ import { aws_s3 as s3 } from 'aws-cdk-lib';
 import { aws_iam as iam } from 'aws-cdk-lib';
 
 export class CurStack extends Stack {
+  public curName: string;
+  public curs3: s3.IBucket;
+
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
     // The code that defines your stack goes here
 
-    const curs3 = new s3.Bucket(this, 'curs3', {
+    this.curs3 = new s3.Bucket(this, 'curs3', {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       publicReadAccess: false,
       versioned: true,
@@ -19,22 +22,23 @@ export class CurStack extends Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    curs3.addToResourcePolicy(
+    this.curs3.addToResourcePolicy(
       new iam.PolicyStatement({
         principals: [new iam.ServicePrincipal('billingreports.amazonaws.com')],
         actions: ['s3:GetBucketAcl', 's3:GetBucketPolicy'],
-        resources: [curs3.bucketArn],
+        resources: [this.curs3.bucketArn],
       }),
     );
-    curs3.addToResourcePolicy(
+    this.curs3.addToResourcePolicy(
       new iam.PolicyStatement({
         principals: [new iam.ServicePrincipal('billingreports.amazonaws.com')],
         actions: ['s3:PutObject'],
-        resources: [`${curs3.bucketArn}/*`],
+        resources: [`${this.curs3.bucketArn}/*`],
       }),
     );
-    const reportName = this.node.tryGetContext('CurReportName');
-    const cfnReportDefinition = new cur.CfnReportDefinition(
+    this.curName = this.node.tryGetContext('CurReportName');
+
+    const athenaReport = new cur.CfnReportDefinition(
       this,
       'CfnReportDefinition',
       {
@@ -43,10 +47,10 @@ export class CurStack extends Stack {
         // textORcsv | Parquet
         format: 'Parquet',
         refreshClosedReports: true,
-        reportName: reportName,
+        reportName: this.curName,
         // CREATE_NEW_REPORT | OVERWRITE_REPORT
         reportVersioning: 'OVERWRITE_REPORT',
-        s3Bucket: curs3.bucketName,
+        s3Bucket: this.curs3.bucketName,
         s3Prefix: 'athena',
         s3Region: this.region!,
         // HOURLY | DAILY | MONTHLY
@@ -55,6 +59,33 @@ export class CurStack extends Stack {
         // the properties below are optional
         // REDSHIFT | QUICKSIGHT | ATHENA
         additionalArtifacts: ['ATHENA'],
+        // RESOURCES
+        additionalSchemaElements: ['RESOURCES'],
+        //billingViewArn: 'billingViewArn',
+      },
+    );
+
+    const qsReport = new cur.CfnReportDefinition(
+      this,
+      'CfnReportDefinitionQS',
+      {
+        // ZIP | GZIP | Parquet
+        compression: 'GZIP',
+        // textORcsv | Parquet
+        format: 'textORcsv',
+        refreshClosedReports: true,
+        reportName: this.curName + '-qs',
+        // CREATE_NEW_REPORT | OVERWRITE_REPORT
+        reportVersioning: 'OVERWRITE_REPORT',
+        s3Bucket: this.curs3.bucketName,
+        s3Prefix: 'quicksight',
+        s3Region: this.region!,
+        // HOURLY | DAILY | MONTHLY
+        timeUnit: 'HOURLY',
+
+        // the properties below are optional
+        // REDSHIFT | QUICKSIGHT | ATHENA
+        additionalArtifacts: ['QUICKSIGHT'],
         // RESOURCES
         additionalSchemaElements: ['RESOURCES'],
         //billingViewArn: 'billingViewArn',

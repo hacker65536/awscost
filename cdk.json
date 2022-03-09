@@ -27,7 +27,6 @@
     "@aws-cdk/core:target-partitions": [
       "aws",
       "aws-cn"
-    ],
-    "CurReportName":"o11y2022-cur"
+    ]
   }
 }
