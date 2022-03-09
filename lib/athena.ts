@@ -10,14 +10,15 @@ export class AthenaStack extends Stack {
   constructor(
     scope: Construct,
     id: string,
-    report: string,
+    CurName: string,
     props?: StackProps,
   ) {
     super(scope, id, props);
 
     // The code that defines your stack goes here
 
-    const database = report.split('-').join( '_');
+    const table = CurName.split('-').join('_');
+    const database = `athenacurcfn_${table}`;
     const workgroup = this.node.tryGetContext('AthenaWorkGroupName');
 
     this.athenaresults3 = new s3.Bucket(this, 'AWSCostAthenaQueryResults', {
@@ -34,7 +35,7 @@ export class AthenaStack extends Stack {
       // the properties below are optional
       description: 'awscost',
       // The option to delete a workgroup and its contents even if the workgroup contains any named queries.
-      recursiveDeleteOption:true,
+      recursiveDeleteOption: true,
       state: 'ENABLED',
       workGroupConfiguration: {
         // 5GB
@@ -98,7 +99,7 @@ export class AthenaStack extends Stack {
         queryStatement: `
          SELECT line_item_line_item_type,
          floor(sum(line_item_blended_cost)) cost
-         FROM ${database}
+         FROM ${table}
          WHERE line_item_product_code = ?
          and year =  ?
          and month = ?
@@ -142,7 +143,7 @@ export class AthenaStack extends Stack {
         queryStatement: `
          SELECT line_item_usage_type,
          floor(sum(line_item_blended_cost)) cost
-         FROM ${database}
+         FROM ${table}
          WHERE line_item_product_code = ?
          and year =  ?
          and month = ?
@@ -189,7 +190,7 @@ export class AthenaStack extends Stack {
         queryStatement: `
          SELECT product_product_name,line_item_product_code,
          floor(sum(line_item_blended_cost)) cost
-         FROM ${database}
+         FROM ${table}
          WHERE year =  ?
          and month = ?
          group by product_product_name,line_item_product_code
@@ -234,7 +235,7 @@ export class AthenaStack extends Stack {
         queryStatement: `
          SELECT line_item_product_code,
          floor(sum(line_item_blended_cost)) cost
-         FROM ${database}
+         FROM ${table}
          WHERE year =  ?
          and month = ?
          group by line_item_product_code

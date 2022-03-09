@@ -19,11 +19,10 @@ export const handler: EmptyHandler = async function (event: any) {
   const token = secobj.token;
   const channel = secobj.channel;
 
-
   // create date
-  const currentTime=new Date()
-  const year= currentTime.getFullYear()
-  const mon = currentTime.getMonth()+1
+  const currentTime = new Date();
+  const year = currentTime.getFullYear();
+  const mon = currentTime.getMonth() + 1;
   // athena
   const athena = new Athena();
 
@@ -39,7 +38,7 @@ export const handler: EmptyHandler = async function (event: any) {
       WorkGroup: wg,
       QueryExecutionContext: {
         Catalog: 'awsdatacatalog',
-        Database: 'athenacurcfn_o11y2022_cur',
+        Database: process.env.DATABASE,
       },
     })
     .promise();
@@ -111,20 +110,20 @@ export const handler: EmptyHandler = async function (event: any) {
       col2 = v.Data![1].VarCharValue!;
       col3 = v.Data![2].VarCharValue!;
     } else {
-      tbltmp.dataSource[k-1] = {
+      tbltmp.dataSource[k - 1] = {
         [col1]: v.Data![0].VarCharValue,
         [col2]: v.Data![1].VarCharValue,
         [col3]: v.Data![2].VarCharValue,
       };
     }
   });
-  tbltmp.dataSource.unshift("-")
+  tbltmp.dataSource.unshift('-');
 
-  console.log(JSON.stringify(tbltmp))
+  console.log(JSON.stringify(tbltmp));
 
   // put to slack
 
-  const tbl=slackTable(tbltmp)
+  const tbl = slackTable(tbltmp);
   /*
   const tbl = slackTable({
     title: 'Marketing Summary',

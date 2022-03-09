@@ -14,8 +14,9 @@ export class LambdaStack extends Stack {
     scope: Construct,
     id: string,
     workgroup: athena.CfnWorkGroup,
-    athenaresults3: s3.Bucket,
-    curs3: s3.IBucket,
+    athenaResultS3: s3.Bucket,
+    curS3: s3.IBucket,
+    CurName: string,
     props?: StackProps,
   ) {
     super(scope, id, props);
@@ -55,7 +56,7 @@ export class LambdaStack extends Stack {
     fn.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['s3:Get*', 's3:List*'],
-        resources: [`${curs3.bucketArn}`, `${curs3.bucketArn}/*`],
+        resources: [`${curS3.bucketArn}`, `${curS3.bucketArn}/*`],
       }),
     );
 
@@ -63,14 +64,17 @@ export class LambdaStack extends Stack {
       new iam.PolicyStatement({
         actions: ['s3:*'],
         resources: [
-          `${athenaresults3.bucketArn}`,
-          `${athenaresults3.bucketArn}/*`,
+          `${athenaResultS3.bucketArn}`,
+          `${athenaResultS3.bucketArn}/*`,
         ],
       }),
     );
 
     fn.addEnvironment('SECRETID', secret.secretArn);
     fn.addEnvironment('ATHENAWORKGROUP', workgroup.ref);
+    const table = CurName.split('-').join('_');
+    const database = `athenacurcfn_${table}`;
+    fn.addEnvironment('DATABASE',database);
 
     new CfnOutput(this, 'SecCli01PutSec', {
       value: `aws secretsmanager put-secret-value --secret-id ${secret.secretArn} --secret-string file://mysec.json`,

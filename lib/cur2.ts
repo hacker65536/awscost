@@ -4,7 +4,7 @@ import { aws_s3 as s3 } from 'aws-cdk-lib';
 
 export class Cur2Stack extends Stack {
   public curName: string;
-  public curs3: s3.IBucket;
+  public curS3: s3.IBucket;
 
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -13,9 +13,9 @@ export class Cur2Stack extends Stack {
 
     this.curName = this.node.tryGetContext('CurReportName');
 
-    this.curs3 = s3.Bucket.fromBucketName(
+    this.curS3 = s3.Bucket.fromBucketName(
       this,
-      'Curs3',
+      'CurS3',
       this.node.tryGetContext('CurBucketName'),
     );
   }
