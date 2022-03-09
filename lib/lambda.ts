@@ -1,13 +1,13 @@
 import * as cdk from 'aws-cdk-lib';
 import { CfnOutput, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { aws_cur as cur } from 'aws-cdk-lib';
 import { aws_s3 as s3 } from 'aws-cdk-lib';
 import { aws_iam as iam } from 'aws-cdk-lib';
 import { aws_lambda_nodejs as lambdajs } from 'aws-cdk-lib';
-import { aws_lambda as lambda } from 'aws-cdk-lib';
 import { aws_secretsmanager as secretsmanager } from 'aws-cdk-lib';
 import { aws_athena as athena } from 'aws-cdk-lib';
+import { aws_events as events } from 'aws-cdk-lib';
+import { aws_events_targets as events_target } from 'aws-cdk-lib';
 
 export class LambdaStack extends Stack {
   constructor(
@@ -74,7 +74,13 @@ export class LambdaStack extends Stack {
     fn.addEnvironment('ATHENAWORKGROUP', workgroup.ref);
     const table = CurName.split('-').join('_');
     const database = `athenacurcfn_${table}`;
-    fn.addEnvironment('DATABASE',database);
+    fn.addEnvironment('DATABASE', database);
+
+    // cron every day
+    const cron = new events.Rule(this, 'Schedule', {
+      schedule: events.Schedule.cron({ minute: '0', hour: '9' }),
+      targets: [new events_target.LambdaFunction(fn, { retryAttempts: 3 })],
+    });
 
     new CfnOutput(this, 'SecCli01PutSec', {
       value: `aws secretsmanager put-secret-value --secret-id ${secret.secretArn} --secret-string file://mysec.json`,
@@ -85,8 +91,9 @@ export class LambdaStack extends Stack {
     });
 
     new CfnOutput(this, 'LocalInvoke', {
-      value: `cdk synth LambdaStack && sam local invoke -t ./cdk.out/LambdaStack.template.json -n env.json ${this.resolve((fn.node.defaultChild as cdk.CfnElement).logicalId)}`
+      value: `cdk synth LambdaStack && sam local invoke -t ./cdk.out/LambdaStack.template.json -n env.json ${this.resolve(
+        (fn.node.defaultChild as cdk.CfnElement).logicalId,
+      )}`,
     });
-
   }
 }

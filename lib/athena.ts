@@ -233,14 +233,17 @@ export class AthenaStack extends Stack {
       {
         statementName: 'awscost_daily_cost_by_svc_pre_stm',
         queryStatement: `
-         SELECT line_item_product_code,
-         floor(sum(line_item_blended_cost)) cost
-         FROM ${table}
-         WHERE year =  ?
-         and month = ?
-         group by line_item_product_code
-         order by cost desc
-         limit 50
+        SELECT product_product_name,
+        DATE_FORMAT((line_item_usage_start_date), '%Y-%m-%d') AS day_line_item_usage_start_date,
+        floor(sum(line_item_blended_cost)) cost
+        FROM ${table}
+        WHERE year =  ?
+        and month = ?
+        and DATE_FORMAT((line_item_usage_start_date), '%Y-%m-%d') = ?
+        group by product_product_name,
+        DATE_FORMAT((line_item_usage_start_date), '%Y-%m-%d')
+        order by cost desc
+        limit 50
       `,
         description: 'daily cost by service prestm',
         workGroup: athenaworkgroup,
@@ -263,6 +266,10 @@ export class AthenaStack extends Stack {
         date_format(
           current_timestamp - interval '1' day,
           '%c'
+        ),
+        date_format(
+          current_timestamp - interval '1' day,
+          '%Y-%m-%d'
         ) 
         `,
         description: 'daily cost by svc nq',

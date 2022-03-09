@@ -88,7 +88,7 @@ export const handler: EmptyHandler = async function (event: any) {
   var col1 = '';
   var col2 = '';
   var col3 = '';
-  output.ResultSet?.Rows?.forEach((v, k) => {
+  output.ResultSet?.Rows?.some((v, k) => {
     if (k == 0) {
       tbltmp.columns[0] = {
         width: 40,
@@ -116,81 +116,25 @@ export const handler: EmptyHandler = async function (event: any) {
         [col3]: v.Data![2].VarCharValue,
       };
     }
+
+    // top 30
+    if (k > 30) {
+      return true;
+    }
   });
+
   tbltmp.dataSource.unshift('-');
 
-  console.log(JSON.stringify(tbltmp));
 
   // put to slack
-
   const tbl = slackTable(tbltmp);
-  /*
-  const tbl = slackTable({
-    title: 'Marketing Summary',
-    columns: [
-      { width: 20, title: 'Campaign', dataIndex: 'campaign' },
-      { width: 12, title: 'Cost', dataIndex: 'cost', align: 'right' },
-    ],
-    dataSource: [
-      '-',
-      { campaign: 'Google CPC', cost: '$ 400' },
-      { campaign: 'Facebook CPC', cost: '$ 60' },
-      { campaign: 'Youtube Video', cost: '$ 1,230' },
-      '-',
-      { campaign: 'Total', cost: '$ 1,690' },
-    ],
-  });
-  */
   const client = new WebClient(token);
-  //const text = '*Hello World*';
   const text = tbl;
-
+  // https://api.slack.com/docs/rate-limits#rate-limits__rtm-apis__posting-messages
+  // Clients should limit messages sent to channels to 4000 character
+  //console.log(text.length) 
   const response = await client.chat.postMessage({ channel, text });
 
-  // 投稿に成功すると `ok` フィールドに `true` が入る。
+  return String(response)
 
-  return String(secobj.token);
-  //return String(res);
-
-  /*
-  const athena = new Athena();
-  const output = await athena
-    .getQueryResults({
-      QueryExecutionId: '8ca66ae0-3f31-4f25-aa87-0f13dc214feb',
-    })
-    .promise();
-  console.log(output);
-  output.ResultSet?.Rows?.forEach((v) => {
-    v.Data;
-  });
-  */
-
-  /*
-  registerFont(__dirname.concat('/fonts/DejaVuSans.ttf'), { family: 'DejaVu Sans' });
-
-
-    let canvas = createCanvas(300, 300);
-    var ctxCircle = canvas.getContext('2d');
-    var X = canvas.width / 2;
-    var Y = canvas.height / 2;
-    var R = 45;
-    ctxCircle.beginPath();
-    ctxCircle.arc(X, Y, R, 0, 2 * Math.PI, false);
-    ctxCircle.lineWidth = 3;
-    ctxCircle.strokeStyle = '#FF9900';
-    ctxCircle.stroke();
-
-    var ctxText = canvas.getContext('2d');
-    ctxText.font = '40px "DejaVu Sans"';
-    ctxText.fillStyle = '#146EB4';
-    ctxText.fillText('DejaVu Sans', 15, 120);
-
-    const response1 = {
-        statusCode: 200,
-        body: JSON.stringify(canvas.toDataURL()),
-    };
-    */
-
-  //return String(JSON.stringify(output.ResultSet?.Rows));
-  // return String(response1);
 };
